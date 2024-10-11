@@ -1,0 +1,455 @@
+<!DOCTYPE html>
+<html lang="ar">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>إدارة حسابات الموردين</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f4f4f4;
+            margin: 0;
+            padding: 0;
+        }
+        header {
+            background: #333;
+            color: #fff;
+            padding: 10px 0;
+            text-align: center;
+        }
+        .container {
+            width: 90%;
+            max-width: 800px;
+            margin: 20px auto;
+            background: #fff;
+            padding: 20px;
+            border-radius: 5px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+        }
+        button {
+            padding: 10px;
+            margin: 5px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            background-color: #5cb85c;
+            color: white;
+            transition: background-color 0.3s;
+        }
+        button:hover {
+            background-color: #4cae4c;
+        }
+        input[type="text"], input[type="number"] {
+            width: calc(100% - 22px);
+            padding: 10px;
+            margin: 5px 0;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+            font-size: 14px;
+        }
+        th, td {
+            padding: 10px;
+            border: 1px solid #ccc;
+            text-align: center;
+        }
+        th {
+            background-color: #f2f2f2;
+        }
+        .print-btn {
+            background-color: #007bff;
+        }
+        .delete-btn {
+            background-color: #d9534f;
+        }
+        .search-container {
+            display: flex;
+            align-items: center;
+        }
+        .search-container input {
+            flex: 1;
+        }
+        @media (max-width: 600px) {
+            button {
+                width: 100%;
+                margin: 5px 0;
+            }
+            
+             button.bs {
+                width: 20%;
+                margin: 10px 0;
+            }
+            .search-container button {
+                padding: 9px;
+                font-size: 12px; /* تصغير حجم الزر */
+            }
+            table {
+                font-size: 12px;
+            }
+            th, td {
+                padding: 8px;
+            }
+        }
+        @media print {
+            body {
+                margin: 0;
+            }
+            header {
+                display: none;
+            }
+            button {
+                display: none;
+            }
+            table {
+                border: 1px solid #000; /* حدود الجدول في الطباعة */
+                margin: 20px 0;
+            }
+            th, td {
+                border: 1px solid #000; /* حدود خلايا الجدول في الطباعة */
+            }
+        }
+    </style>
+</head>
+<body>
+
+<header>
+    <h1>إدارة حسابات الموردين - جورج كلونى</h1>
+</header>
+
+<div class="container" id="content">
+    <h2>الصفحة الرئيسية</h2>
+    <button onclick="showAddInvoice()">إضافة فاتورة</button>
+    <button onclick="showAddPayment()">دفع</button>
+    <button onclick="showAddSupplier()">إضافة مورد جديد</button>
+    <button onclick="showSupplierSummary()">عرض ملخص الموردين</button>
+
+    <div id="searchSupplier" style="margin-top: 20px;">
+        <h3>البحث عن مورد</h3>
+        <div class="search-container">
+            <input type="text" id="supplierSearch" placeholder="ادخل اسم المورد">
+            <button class="bs" onclick="searchSupplier()">🔍</button>
+        </div>
+        <div id="supplierAccountTable"></div>
+    </div>
+    
+    <div id="supplierSummary" style="margin-top: 20px;"></div>
+</div>
+
+<script>
+    // استرجاع الموردين من LocalStorage
+    let suppliers = JSON.parse(localStorage.getItem('suppliers')) || [];
+
+    // دالة لتحديث LocalStorage
+    function updateLocalStorage() {
+        localStorage.setItem('suppliers', JSON.stringify(suppliers));
+    }
+
+    // دالة لإضافة مورد جديد
+    function showAddSupplier() {
+        const name = prompt("ادخل اسم المورد:");
+        const openingBalance = parseFloat(prompt("ادخل الرصيد الافتتاحي:"));
+        if (name && !isNaN(openingBalance)) {
+            suppliers.push({ name, openingBalance, currentBalance: openingBalance, invoices: [], payments: [] });
+            updateLocalStorage();
+            alert("تمت إضافة المورد بنجاح");
+        }
+    }
+
+    // دالة لإضافة فاتورة
+    function showAddInvoice() {
+        const supplierName = prompt("ادخل اسم المورد لإضافة فاتورة:");
+        const amount = parseFloat(prompt("ادخل قيمة الفاتورة:"));
+        const supplier = suppliers.find(s => s.name === supplierName);
+        if (supplier && !isNaN(amount)) {
+            const dateTime = new Date().toLocaleString();
+            supplier.invoices.push({ amount, date: dateTime });
+            supplier.currentBalance += amount;
+            updateLocalStorage();
+            alert("تمت إضافة الفاتورة بنجاح");
+        } else {
+            alert("لم يتم العثور على المورد أو قيمة غير صحيحة");
+        }
+    }
+
+    // دالة لإضافة دفع
+    function showAddPayment() {
+        const supplierName = prompt("ادخل اسم المورد لدفع:");
+        const amount = parseFloat(prompt("ادخل قيمة الدفع:"));
+        const supplier = suppliers.find(s => s.name === supplierName);
+        if (supplier && !isNaN(amount)) {
+            const dateTime = new Date().toLocaleString();
+            supplier.payments.push({ amountPaid: amount, date: dateTime });
+            supplier.currentBalance -= amount;
+            updateLocalStorage();
+            alert("تمت إضافة الدفع بنجاح");
+        } else {
+            alert("لم يتم العثور على المورد أو قيمة غير صحيحة");
+        }
+    }
+
+    // دالة للبحث عن المورد وعرض حسابه
+    function searchSupplier() {
+        const name = document.getElementById('supplierSearch').value;
+        const supplier = suppliers.find(s => s.name === name);
+        if (supplier) {
+            let table = `
+                <table>
+                    <thead>
+                        <tr>
+                            <th>التاريخ</th>
+                            <th>الفاتورة</th>
+                            <th>الدفع</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+            `;
+            supplier.invoices.forEach((inv, index) => {
+                table += `
+                    <tr>
+                        <td>${inv.date}</td>
+                        <td>${inv.amount}</td>
+                        <td>-</td>
+                        <td><button class="delete-btn" onclick="deleteInvoice('${supplier.name}', ${index})">حذف</button></td>
+                    </tr>
+                `;
+            });
+
+            supplier.payments.forEach((pay, index) => {
+                table += `
+                    <tr>
+                        <td>${pay.date}</td>
+                        <td>-</td>
+                        <td>${pay.amountPaid}</td>
+                        <td><button class="delete-btn" onclick="deletePayment('${supplier.name}', ${index})">حذف</button></td>
+                    </tr>
+                `;
+            });
+
+            table += `
+                <tr>
+                    <td colspan="2"><strong>الرصيد الحالي</strong></td>
+                    <td colspan="1"><strong>${supplier.currentBalance}</strong></td>
+                    <td></td>
+                </tr>
+            `;
+            
+            table += `
+                </tbody>
+                </table>
+                <button class="print-btn" onclick="printReport('${name}')">طباعة الحساب</button>
+                <button class="delete-btn" onclick="deleteSupplier('${name}')">حذف المورد</button>
+            `;
+            document.getElementById('supplierAccountTable').innerHTML = table;
+        } else {
+            document.getElementById('supplierAccountTable').innerHTML = '<p>لم يتم العثور على مورد بهذا الاسم.</p>';
+        }
+    }
+
+    // دالة لحذف فاتورة
+    function deleteInvoice(supplierName, invoiceIndex) {
+        const supplier = suppliers.find(s => s.name === supplierName);
+        if (supplier) {
+            supplier.currentBalance -= supplier.invoices[invoiceIndex].amount;
+            supplier.invoices.splice(invoiceIndex, 1);
+            updateLocalStorage();
+            alert("تم حذف الفاتورة بنجاح");
+            searchSupplier();
+        }
+    }
+
+    // دالة لحذف دفع
+    function deletePayment(supplierName, paymentIndex) {
+        const supplier = suppliers.find(s => s.name === supplierName);
+        if (supplier) {
+            supplier.currentBalance += supplier.payments[paymentIndex].amountPaid;
+            supplier.payments.splice(paymentIndex, 1);
+            updateLocalStorage();
+            alert("تم حذف الدفع بنجاح");
+            searchSupplier();
+        }
+    }
+
+    // دالة لحذف مورد
+    function deleteSupplier(supplierName) {
+        if (confirm("هل أنت متأكد أنك تريد حذف المورد؟")) {
+            suppliers = suppliers.filter(s => s.name !== supplierName);
+            updateLocalStorage();
+            alert("تم حذف المورد بنجاح");
+            document.getElementById('supplierAccountTable').innerHTML = '';
+        }
+    }
+
+    // دالة لعرض ملخص الموردين
+    function showSupplierSummary() {
+        let summaryTable = `
+            <h2>ملخص الموردين</h2>
+            <table>
+                <thead>
+                    <tr>
+                        <th>اسم المورد</th>
+                        <th>الرصيد الحالي</th>
+                    </tr>
+                </thead>
+                <tbody>
+        `;
+        let totalBalance = 0; // متغير لحفظ مجموع الأرصدة
+        suppliers.forEach(s => {
+            summaryTable += `
+                <tr>
+                    <td>${s.name}</td>
+                    <td>${s.currentBalance}</td>
+                </tr>
+            `;
+            totalBalance += s.currentBalance; // إضافة الرصيد الحالي للمجموع
+        });
+        summaryTable += `
+                <tr>
+                    <td><strong>المجموع</strong></td>
+                    <td><strong>${totalBalance}</strong></td>
+                </tr>
+                </tbody>
+            </table>
+            <button class="print-btn" onclick="printSupplierSummary()">طباعة الملخص</button>
+        `;
+        document.getElementById('supplierSummary').innerHTML = summaryTable;
+    }
+
+    // دالة لطباعة ملخص الموردين
+    function printSupplierSummary() {
+        const printWindow = window.open('', '_blank');
+        let totalBalance = suppliers.reduce((acc, s) => acc + s.currentBalance, 0); // حساب مجموع الأرصدة
+        printWindow.document.write(`
+            <html>
+            <head>
+                <style>
+                    body {
+                        font-family: Arial, sans-serif;
+                    }
+                    table {
+                        width: 100%;
+                        border-collapse: collapse;
+                    }
+                    th, td {
+                        border: 1px solid #000;
+                        padding: 10px;
+                        text-align: center;
+                    }
+                    th {
+                        background-color: #f2f2f2;
+                    }
+                </style>
+            </head>
+            <body>
+                <h2>ملخص الموردين</h2>
+                <h4>التاريخ: ${new Date().toLocaleDateString()} الوقت: ${new Date().toLocaleTimeString()}</h4>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>اسم المورد</th>
+                            <th>الرصيد الحالي</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+        `);
+        suppliers.forEach(s => {
+            printWindow.document.write(`
+                <tr>
+                    <td>${s.name}</td>
+                    <td>${s.currentBalance}</td>
+                </tr>
+            `);
+        });
+        printWindow.document.write(`
+                <tr>
+                    <td><strong>المجموع</strong></td>
+                    <td><strong>${totalBalance}</strong></td>
+                </tr>
+                </tbody>
+                </table>
+            </body>
+            </html>
+        `);
+        printWindow.document.close();
+        printWindow.print();
+    }
+
+    // دالة لطباعة التقرير
+    function printReport(supplierName) {
+        const supplier = suppliers.find(s => s.name === supplierName);
+        if (supplier) {
+            let reportContent = `
+                <html>
+                <head>
+                    <style>
+                        body {
+                            font-family: Arial, sans-serif;
+                        }
+                        table {
+                            width: 100%;
+                            border-collapse: collapse;
+                        }
+                        th, td {
+                            border: 1px solid #000;
+                            padding: 10px;
+                            text-align: center;
+                        }
+                        th {
+                            background-color: #f2f2f2;
+                        }
+                    </style>
+                </head>
+                <body>
+                    <h2>تقرير حساب المورد: ${supplierName}</h2>
+                    <h4>التاريخ: ${new Date().toLocaleDateString()} الوقت: ${new Date().toLocaleTimeString()}</h4>
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>التاريخ</th>
+                                <th>الفاتورة</th>
+                                <th>الدفع</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+            `;
+            supplier.invoices.forEach(inv => {
+                reportContent += `
+                    <tr>
+                        <td>${inv.date}</td>
+                        <td>${inv.amount}</td>
+                        <td>-</td>
+                    </tr>
+                `;
+            });
+            supplier.payments.forEach(pay => {
+                reportContent += `
+                    <tr>
+                        <td>${pay.date}</td>
+                        <td>-</td>
+                        <td>${pay.amountPaid}</td>
+                    </tr>
+                `;
+            });
+            reportContent += `
+                <tr>
+                    <td colspan="2"><strong>الرصيد الحالي</strong></td>
+                    <td><strong>${supplier.currentBalance}</strong></td>
+                </tr>
+            `;
+            reportContent += `
+                </tbody>
+                </table>
+            `;
+            const printWindow = window.open('', '_blank');
+            printWindow.document.write(reportContent);
+            printWindow.document.close();
+            printWindow.print();
+        }
+    }
+</script>
+
+</body>
+</html>
