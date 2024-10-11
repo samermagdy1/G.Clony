@@ -1,4 +1,3 @@
-# G.Clony
 <!DOCTYPE html>
 <html lang="ar">
 <head>
@@ -18,6 +17,11 @@
             padding: 10px 0;
             text-align: center;
         }
+        
+        p,h2,h3 {
+       text-align: center;
+          }
+        
         .container {
             width: 90%;
             max-width: 800px;
@@ -27,6 +31,15 @@
             border-radius: 5px;
             box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
         }
+        
+        .pcontainer{
+            
+        display: flex;
+        justify-content: center;
+        align-items: center;
+
+        }
+    
         button {
             padding: 10px;
             margin: 5px;
@@ -43,7 +56,7 @@
         input[type="text"], input[type="number"] {
             width: calc(100% - 22px);
             padding: 10px;
-            margin: 5px 0;
+            margin: 5px 0px;
             border: 1px solid #ccc;
             border-radius: 5px;
         }
@@ -78,16 +91,32 @@
             flex: 1;
         }
         @media (max-width: 600px) {
+            
+             .pcontainer{
+            
+             display: block;
+                        
+            }
+            
+              input[type="text"], input[type="number"] {
+            width: calc(100% - 22px);
+            padding: 10px;
+            margin: 5px 5px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+        }
+        
+            
             button {
                 width: 100%;
                 margin: 5px 0;
             }
             button.bs {
                 width: 20%;
-                margin: 10px 0;
+                margin: 10px 2;
             }
             .search-container button {
-                padding: 9px;
+                padding: 10px;
                 font-size: 12px;
             }
             table {
@@ -125,11 +154,12 @@
 
 <div class="container" id="content">
     <h2>الصفحة الرئيسية</h2>
+      <div class="pcontainer">
     <button onclick="showAddInvoice()">إضافة فاتورة</button>
-    <button onclick="showAddPayment()">دفع</button>
-    <button onclick="showAddSupplier()">إضافة مورد جديد</button>
+    <button onclick="showAddPayment()">دفعه</button>
     <button onclick="showSupplierSummary()">عرض ملخص الموردين</button>
-
+    <button onclick="showAddSupplier()">+ إضافة مورد جديد</button>
+      </div>
     <div id="searchSupplier" style="margin-top: 20px;">
         <h3>البحث عن مورد</h3>
         <div class="search-container">
@@ -156,6 +186,7 @@
             suppliers.push({ name, openingBalance, currentBalance: openingBalance, invoices: [], payments: [] });
             updateLocalStorage();
             alert("تمت إضافة المورد بنجاح");
+            location.reload();
         }
     }
 
@@ -169,6 +200,7 @@
             supplier.currentBalance += amount;
             updateLocalStorage();
             alert("تمت إضافة الفاتورة بنجاح");
+            location.reload();
         } else {
             alert("لم يتم العثور على المورد أو قيمة غير صحيحة");
         }
@@ -184,6 +216,7 @@
             supplier.currentBalance -= amount;
             updateLocalStorage();
             alert("تمت إضافة الدفع بنجاح");
+            location.reload();
         } else {
             alert("لم يتم العثور على المورد أو قيمة غير صحيحة");
         }
@@ -337,35 +370,105 @@
             suppliers = suppliers.filter(s => s.name !== supplierName);
             updateLocalStorage();
             alert("تم حذف المورد بنجاح");
+            location.reload();
             searchSupplier();
         }
     }
-
+// دالة لعرض ملخص الموردين
     function showSupplierSummary() {
         let summaryTable = `
+            <h2>ملخص الموردين</h2>
             <table>
                 <thead>
                     <tr>
                         <th>اسم المورد</th>
-                        <th>الرصيد الافتتاحي</th>
                         <th>الرصيد الحالي</th>
                     </tr>
                 </thead>
                 <tbody>
         `;
-        suppliers.forEach(supplier => {
+        let totalBalance = 0; // متغير لحفظ مجموع الأرصدة
+        suppliers.forEach(s => {
             summaryTable += `
                 <tr>
-                    <td>${supplier.name}</td>
-                    <td>${supplier.openingBalance}</td>
-                    <td>${supplier.currentBalance}</td>
+                    <td>${s.name}</td>
+                    <td>${s.currentBalance}</td>
                 </tr>
             `;
+            totalBalance += s.currentBalance; // إضافة الرصيد الحالي للمجموع
         });
-        summaryTable += `</tbody></table>`;
+        summaryTable += `
+                <tr>
+                    <td><strong>المجموع</strong></td>
+                    <td><strong>${totalBalance}</strong></td>
+                </tr>
+                </tbody>
+            </table>
+            <button class="print-btn" onclick="printSupplierSummary()">طباعة الملخص</button>
+        `;
         document.getElementById('supplierSummary').innerHTML = summaryTable;
     }
 
+    // دالة لطباعة ملخص الموردين
+    function printSupplierSummary() {
+        const printWindow = window.open('', '_blank');
+        let totalBalance = suppliers.reduce((acc, s) => acc + s.currentBalance, 0); // حساب مجموع الأرصدة
+        printWindow.document.write(`
+            <html>
+            <head>
+                <style>
+                    body {
+                        font-family: Arial, sans-serif;
+                    }
+                    table {
+                        width: 100%;
+                        border-collapse: collapse;
+                    }
+                    th, td {
+                        border: 1px solid #000;
+                        padding: 10px;
+                        text-align: center;
+                    }
+                    th {
+                        background-color: #f2f2f2;
+                    }
+                </style>
+            </head>
+            <body>
+                <h2>ملخص الموردين</h2>
+                <h4>التاريخ: ${new Date().toLocaleDateString()} الوقت: ${new Date().toLocaleTimeString()}</h4>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>اسم المورد</th>
+                            <th>الرصيد الحالي</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+        `);
+        suppliers.forEach(s => {
+            printWindow.document.write(`
+                <tr>
+                    <td>${s.name}</td>
+                    <td>${s.currentBalance}</td>
+                </tr>
+            `);
+        });
+        printWindow.document.write(`
+                <tr>
+                    <td><strong>المجموع</strong></td>
+                    <td><strong>${totalBalance}</strong></td>
+                </tr>
+                </tbody>
+                </table>
+            </body>
+            </html>
+        `);
+        printWindow.document.close();
+        printWindow.print();
+    }
+
+    // دالة لطباعة التقرير
     function printReport(supplierName) {
         const supplier = suppliers.find(s => s.name === supplierName);
         if (supplier) {
@@ -438,6 +541,14 @@
         }
     }
 </script>
-
+    <script>
+      input[type="text"], input[type="number"] {
+            width: calc(100% - 22px);
+            padding: 10px;
+            margin: 5px 2px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+        }
+</script>
 </body>
 </html>
